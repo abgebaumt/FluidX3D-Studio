@@ -1,0 +1,9 @@
+{
+  "fluidx3dPath": "./fluidx3d",
+  "port": 8787,
+  "gpu": {
+    "name": "My GPU",
+    "vramMB": 8192,
+    "bandwidthGBs": 400
+  }
+}

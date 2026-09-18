@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="FluidX3D Studio – a local web GUI for setting up, building and running FluidX3D simulations (lattice Boltzmann CFD on the GPU): load an STL, place it in the wind tunnel, set inflow and boundary conditions.">
+<meta name="author" content="Tim Stuhler">
+<title>FluidX3D Studio</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230891b2'/%3E%3Cpath d='M5 12c4-4 8 4 11 0s7-4 11 0M5 20c4-4 8 4 11 0s7-4 11 0' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="/css/app.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "/vendor/three/build/three.module.js",
+    "three/addons/": "/vendor/three/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ==================================================================== head -->
+  <header class="head" id="head">
+    <div class="brand"><b>FluidX3D</b><span>Studio</span><a class="brand-src"
+       href="https://github.com/abgebaumt/fluidx3d-studio" target="_blank" rel="noopener"
+       title="FluidX3D Studio · AGPL-3.0 · source code on GitHub">Source</a></div>
+
+    <select class="setup-select" id="setupSelect" aria-label="Saved setups">
+      <option value="">— Load setup —</option>
+    </select>
+
+    <input class="setup-name" id="setupName" value="new_setup"
+           spellcheck="false" autocomplete="off" aria-label="Setup name">
+
+    <button id="btnSave" title="Save setup (Ctrl+S)">Save</button>
+
+    <button id="btnUpload" title="Upload STL file">Load STL</button>
+    <input type="file" id="fileInput" accept=".stl" hidden multiple>
+
+    <div class="buildstate" id="buildState"><i class="dot"></i><em>State unknown</em></div>
+
+    <div class="head-sp"></div>
+
+    <div class="health" id="healthState" title="Connection to server"><i class="dot"></i><em>connecting …</em></div>
+
+    <button id="btnConsole" title="Show or hide the console">Console</button>
+    <button id="btnRender">Render</button>
+    <button class="primary" id="btnRun">Run interactive</button>
+    <button class="danger" id="btnStop" disabled>Stop</button>
+  </header>
+
+  <!-- ==================================================================== tree -->
+  <nav class="tree" id="tree" aria-label="Scene"></nav>
+
+  <!-- ==================================================================== view -->
+  <div class="view" id="view">
+    <div class="viewport-canvas" id="viewport-canvas"></div>
+
+    <div class="hud tl" id="hudTL"></div>
+    <div class="hud br" id="hudBR"></div>
+
+    <div class="legend" id="legend">
+      <div><span>Solid</span><i style="background:var(--solid)"></i></div>
+      <div><span>Inflow</span><i style="background:var(--fluid)"></i></div>
+      <div><span>Domain</span><i style="background:var(--muted)"></i></div>
+    </div>
+
+    <div class="gizmobar" id="gizmobar" role="group" aria-label="Tool">
+      <button data-gizmo="translate" aria-pressed="true" title="Move (G)">Move</button>
+      <button data-gizmo="rotate" aria-pressed="false" title="Rotate (R)">Rotate</button>
+      <button data-gizmo="scale" aria-pressed="false" title="Scale (S)">Scale</button>
+      <button data-gizmo="none" aria-pressed="false" title="No tool (Esc)">Off</button>
+    </div>
+
+    <div class="viewbar" id="viewbar" role="group" aria-label="Display">
+      <button data-vb="flow" aria-pressed="true">Flow</button>
+      <button data-vb="bc" aria-pressed="true">Boundaries</button>
+      <button data-vb="grid" aria-pressed="true">Grid</button>
+      <button data-vb="axes" aria-pressed="true">Axes</button>
+    </div>
+
+    <div class="credit">Solver: <a href="https://github.com/ProjectPhysX/FluidX3D" target="_blank" rel="noopener"
+         title="FluidX3D on GitHub – separate license, not part of this project">FluidX3D</a> by Dr. Moritz Lehmann</div>
+
+    <div class="drop" id="dropZone" data-active="false" aria-hidden="true">
+      <div class="drop-box"><b>Drop STL here</b><span>it will be copied to data/uploads/</span></div>
+    </div>
+  </div>
+
+  <!-- =============================================================== inspector -->
+  <aside class="insp" id="insp" aria-label="Properties"></aside>
+
+  <!-- ==================================================================== band -->
+  <footer class="band" id="band"></footer>
+</div>
+
+<!-- ===================================================================== console -->
+<section class="console" id="console" data-open="false" aria-live="polite" aria-label="Build and run">
+  <div class="console-head">
+    <h3>Build &amp; run</h3>
+    <span class="stage" id="consoleStage"></span>
+    <div class="head-sp"></div>
+    <button id="consoleClear">Clear</button>
+    <button id="consoleClose">Close</button>
+  </div>
+  <pre id="consoleOut"></pre>
+</section>
+
+<!-- ======================================================================= modal -->
+<div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal-box">
+    <h3 id="modalTitle">Error</h3>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <button class="primary" id="modalClose">OK</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>

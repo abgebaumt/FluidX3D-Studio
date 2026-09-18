@@ -1,0 +1,49 @@
+{
+  "name": "fluidx3d-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Unofficial web GUI for FluidX3D, the GPU lattice Boltzmann (LBM) CFD solver: load STL models, set up a virtual wind tunnel in the browser, then build and run FluidX3D simulations.",
+  "keywords": [
+    "fluidx3d",
+    "cfd",
+    "computational-fluid-dynamics",
+    "lbm",
+    "lattice-boltzmann",
+    "gpu",
+    "opencl",
+    "wind-tunnel",
+    "aerodynamics",
+    "stl",
+    "simulation",
+    "gui",
+    "web-gui",
+    "three.js",
+    "express"
+  ],
+  "homepage": "https://github.com/abgebaumt/fluidx3d-studio#readme",
+  "bugs": {
+    "url": "https://github.com/abgebaumt/fluidx3d-studio/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abgebaumt/fluidx3d-studio.git"
+  },
+  "license": "AGPL-3.0-or-later",
+  "author": "Tim Stuhler",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "install-solver": "node scripts/install-solver.js",
+    "uninstall-solver": "node scripts/uninstall-solver.js",
+    "example": "node scripts/make-example.js --install",
+    "make-example": "node scripts/make-example.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.1",
+    "three": "^0.171.0"
+  }
+}

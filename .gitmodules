@@ -1,0 +1,6 @@
+[submodule "fluidx3d"]
+	path = fluidx3d
+	url = https://github.com/ProjectPhysX/FluidX3D.git
+	branch = master
+	# install-solver adds files to the checkout; that is expected, not a change to track
+	ignore = dirty

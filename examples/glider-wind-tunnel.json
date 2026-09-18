@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "name": "glider-wind-tunnel",
+  "domain": {
+    "size_m": [
+      30,
+      40,
+      14
+    ],
+    "target_vram_mb": 4000
+  },
+  "fluid": {
+    "velocity_ms": 25,
+    "azimuth_deg": 0,
+    "elevation_deg": 0,
+    "density_kgm3": 1.225,
+    "viscosity_m2s": 0.0000148,
+    "u_lbm": 0.075
+  },
+  "boundaries": {
+    "xmin": "equilibrium",
+    "xmax": "equilibrium",
+    "ymin": "equilibrium",
+    "ymax": "equilibrium",
+    "zmin": "equilibrium",
+    "zmax": "equilibrium"
+  },
+  "reference": {
+    "length_m": 0.72,
+    "source": "manual"
+  },
+  "objects": [
+    {
+      "id": "obj-1",
+      "name": "Glider",
+      "type": "stl",
+      "file": "uploads/glider.stl",
+      "enabled": true,
+      "visible": true,
+      "sizing": {
+        "mode": "scale",
+        "value": 1
+      },
+      "position_frac": [
+        0.5,
+        0.35,
+        0.5
+      ],
+      "rotation_deg": {
+        "pitch": -3,
+        "yaw": 0,
+        "roll": 0
+      },
+      "motion": {
+        "type": "none",
+        "axis": [
+          0,
+          1,
+          0
+        ],
+        "rpm": 0,
+        "revoxelize_interval": 4
+      },
+      "sealing": {
+        "mode": "fill",
+        "close_holes": 1,
+        "min_thickness": 1
+      }
+    }
+  ],
+  "visualization": {
+    "modes": [
+      "solid",
+      "q_criterion"
+    ],
+    "q_criterion": 0.0008,
+    "u_max": 0.18,
+    "background": "0xCCE4FF"
+  },
+  "solver": {
+    "velocity_set": 19,
+    "precision": "FP16S",
+    "extensions": [
+      "EQUILIBRIUM_BOUNDARIES",
+      "SUBGRID"
+    ]
+  },
+  "run": {
+    "mode": "interactive",
+    "duration_s": 4,
+    "fps": 60,
+    "camera": {
+      "type": "orbit",
+      "azimuth_from_deg": -70,
+      "azimuth_to_deg": 70,
+      "elevation_deg": 20,
+      "distance": 60,
+      "zoom": 1.3
+    }
+  }
+}

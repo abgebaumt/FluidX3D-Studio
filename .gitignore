@@ -1,0 +1,11 @@
+node_modules/
+data/uploads/*
+!data/uploads/.gitkeep
+data/setups/*
+!data/setups/.gitkeep
+data/generated/
+data/backup/
+studio.config.json
+*.log
+.DS_Store
+.claude/

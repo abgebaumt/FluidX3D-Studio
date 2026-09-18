@@ -1,0 +1,115 @@
+FluidX3D Studio: optional patch for FluidX3D (https://github.com/ProjectPhysX/FluidX3D)
+
+Draws the skybox as the background of the visualisation instead of a flat
+colour. Apply it inside the FluidX3D checkout, see README.md.
+
+This patch contains and alters source code of FluidX3D, Copyright (c)
+2022-2026 Dr. Moritz Lehmann. It is licensed under the FluidX3D license
+(LICENSES/FluidX3D.md), not under the AGPL of FluidX3D Studio. A FluidX3D
+built with it is an altered version and has to be marked as such.
+
+diff --git a/src/kernel.cpp b/src/kernel.cpp
+index 98279e9..f7e099c 100644
+--- a/src/kernel.cpp
++++ b/src/kernel.cpp
+@@ -349,11 +349,6 @@ string opencl_c_container() { return R( // ########################## begin of O
+ 	if(vr) convert_triangle_interpolated(p0, p1, p2, c0, c1, c2, camera_cache, bitmap, zbuffer, -1); // left eye
+ 	/****/ convert_triangle_interpolated(p0, p1, p2, c0, c1, c2, camera_cache, bitmap, zbuffer, vr); // right eye
+ }
+-)+R(kernel void graphics_clear(global int* bitmap, global int* zbuffer) {
+-	const uint n = get_global_id(0);
+-	bitmap[n] = def_background_color; // black background = 0x000000, use 0xFFFFFF for white background
+-	zbuffer[n] = -2147483648;
+-}
+ )+R(constant uchar triangle_table_data[1920] = { // source: Paul Bourke, http://paulbourke.net/geometry/polygonise/, termination value 15, bit packed
+ 	255,255,255,255,255,255,255, 15, 56,255,255,255,255,255,255, 16,249,255,255,255,255,255, 31, 56,137,241,255,255,255,255, 33,250,255,255,255,255,255, 15, 56, 33,250,255,255,255,255, 41, 10,146,
+ 	255,255,255,255, 47, 56,162,168,137,255,255,255,179,242,255,255,255,255,255, 15, 43,184,240,255,255,255,255,145, 32,179,255,255,255,255, 31, 43,145,155,184,255,255,255,163,177, 58,255,255,255,
+@@ -641,6 +636,15 @@ string opencl_c_container() { return R( // ########################## begin of O
+ 	const float u1=fu-(float)ua, v1=fv-(float)va, u0=1.0f-u1, v0=1.0f-v1; // interpolation factors
+ 	return color_mix(color_mix(s00, s01, v0), color_mix(s10, s11, v0), u0); // perform bilinear interpolation
+ }
++)+R(kernel void graphics_clear(const global float* camera, global int* bitmap, global int* zbuffer, const global int* skybox) { // Patch: Skybox als Hintergrund statt Vollfarbe
++	const uint n = get_global_id(0);
++	if(n>=(uint)def_screen_width*(uint)def_screen_height) return;
++	float camera_cache[15]; // cache camera parameters
++	for(uint i=0u; i<15u; i++) camera_cache[i] = camera[i];
++	const ray camray = get_camray((int)(n%(uint)def_screen_width), (int)(n/(uint)def_screen_width), camera_cache);
++	bitmap[n] = skybox_color(camray, skybox);
++	zbuffer[n] = -2147483648;
++}
+ )+R(int last_ray(const ray reflection, const ray transmission, const float reflectivity, const float transmissivity, const global int* skybox) {
+ 	return color_mix(skybox_color(reflection, skybox), color_mix(skybox_color(transmission, skybox), def_absorption_color, transmissivity), reflectivity);
+ }
+diff --git a/src/lbm.cpp b/src/lbm.cpp
+index 0373623..1ac83a8 100644
+--- a/src/lbm.cpp
++++ b/src/lbm.cpp
+@@ -472,7 +472,8 @@ void LBM_Domain::Graphics::allocate(Device& device) {
+ 	bitmap = Memory<int>(device, camera.width*camera.height);
+ 	zbuffer = Memory<int>(device, camera.width*camera.height, 1u, lbm->get_D()>1u); // if there are multiple domains, allocate zbuffer also on host side
+ 	camera_parameters = Memory<float>(device, 15u);
+-	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", bitmap, zbuffer);
++	skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
++	kernel_clear = Kernel(device, bitmap.length(), "graphics_clear", camera_parameters, bitmap, zbuffer, skybox);
+ 	kernel_graphics_flags = Kernel(device, lbm->get_N(), "graphics_flags", camera_parameters, bitmap, zbuffer, lbm->flags);
+ 	{
+ #ifndef FORCE_FIELD
+@@ -508,7 +509,6 @@ void LBM_Domain::Graphics::allocate(Device& device) {
+ #endif // FORCE_FIELD
+ 
+ #ifdef SURFACE
+-	skybox = Memory<int>(device, skybox_image->width()*skybox_image->height(), 1u, skybox_image->data());
+ 	{
+ 		const uint cache_required = (cb(GRAPHICS_LSP+1u)*4u+1023u)/1024u; // in KB
+ 		const bool enable_ls = GRAPHICS_LSP>0u&&device.info.max_workgroup_size>=cb(GRAPHICS_LSP)&&device.info.local_cache>=cache_required;
+@@ -632,13 +632,8 @@ string LBM_Domain::Graphics::device_defines(const Device_Info& device_info) cons
+ 	"\n	#define GRAPHICS_TRANSPARENCY "+to_string(GRAPHICS_TRANSPARENCY)+"f"
+ #endif // GRAPHICS_TRANSPARENCY
+ 
+-#ifndef SURFACE
+-	"\n	#define def_skybox_width 1u"
+-	"\n	#define def_skybox_height 1u"
+-#else // SURFACE
+ 	"\n	#define def_skybox_width " +to_string(skybox_image->width() )+"u"
+ 	"\n	#define def_skybox_height "+to_string(skybox_image->height())+"u"
+-#endif // SURFACE
+ 
+ #ifndef FORCE_FIELD
+ 	"\n	#define LSF "+to_string((GRAPHICS_LSF>0u&&device_info.max_workgroup_size>=cb(GRAPHICS_LSF)&&device_info.local_cache>=(cb(GRAPHICS_LSF+1u)* 1u+1023u)/1024u) ? GRAPHICS_LSF : 0u)+"u" // local box size for graphics_flags_mc() kernel (default: 4)
+diff --git a/src/lbm.hpp b/src/lbm.hpp
+index a2ff421..a36c06a 100644
+--- a/src/lbm.hpp
++++ b/src/lbm.hpp
+@@ -162,13 +162,13 @@ public:
+ 		Kernel kernel_graphics_streamline; // render streamlines
+ 		Kernel kernel_graphics_q; // render vorticity (Q-criterion)
+ 
+-#ifdef SURFACE
+ 		const string path_skybox = get_exe_path()+"../skybox/skybox8k.png";
+ 		Image* skybox_image = nullptr;
+-		Memory<int> skybox; // skybox for free surface raytracing
++		Memory<int> skybox; // skybox for free surface raytracing and background
++		Image* get_skybox_image() const { return skybox_image; }
++#ifdef SURFACE
+ 		Kernel kernel_graphics_rasterize_phi; // rasterize free surface
+ 		Kernel kernel_graphics_raytrace_phi; // raytrace free surface
+-		Image* get_skybox_image() const { return skybox_image; }
+ #endif // SURFACE
+ 
+ #ifdef PARTICLES
+@@ -182,15 +182,11 @@ public:
+ 		Graphics() {} // default constructor
+ 		Graphics(LBM_Domain* lbm) {
+ 			this->lbm = lbm;
+-#ifdef SURFACE
+ 			skybox_image = read_png(path_skybox);
+-#endif // SURFACE
+ 		}
+ 		Graphics& operator=(const Graphics& graphics) { // copy assignment
+ 			lbm = graphics.lbm;
+-#ifdef SURFACE
+ 			skybox_image = graphics.get_skybox_image();
+-#endif // SURFACE
+ 			return *this;
+ 		}
+ 		void allocate(Device& device); // allocate memory for bitmap and zbuffer
